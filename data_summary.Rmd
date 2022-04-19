@@ -1,0 +1,241 @@
+---
+title: "Data Summary"
+author: ""
+date: ""
+output: 
+  pdf_document:
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+
+```{r, setup, include=FALSE}
+require(mosaic)   # Load additional packages here 
+knitr::opts_chunk$set(
+  tidy=FALSE,     # display code as typed
+  size="small")   # slightly smaller font for code
+
+library(scales)
+library(tidyverse)
+
+options(digits=10)
+```
+
+```{r eval=FALSE, data-setup-extract, include=FALSE, include=FALSE}
+library(crypto2)
+
+coins <- crypto_list(only_active=TRUE)
+
+coin_info <- crypto_info(coins,limit=1)
+
+coin_hist <- crypto_history(coins, limit=1, end_date="20210205")
+```
+
+```{r include=FALSE}
+coin_hist <- read_csv("data/bitcoin_history.csv")
+```
+
+
+# Bitcoin Data
+
+We obtain Bitcoin historical data using the `crypto2` package in R. The data is available from March 28th, 2013 till February 5th, 2021. All the data obtained is for each day and is in US Dollars. We obtain open, close, high, low prices and their associated times. We also obtain volume and market capitalization.
+
+```{r}
+coin_hist %>% 
+  ggplot(aes(as.Date(timestamp), high)) +
+  geom_line(color="#F2A900") +
+  scale_x_date(date_labels = "%b-%d-%Y") +
+  theme_minimal() +
+  labs(title = "Bitcoin Highest Price (Daily)", x = "Date", y = "High (USD)")
+```
+
+```{r}
+coin_hist %>% 
+  ggplot(aes(as.Date(timestamp), market_cap)) +
+  geom_line(color="#F2A900") +
+  scale_x_date(date_labels = "%b-%d-%Y", limits = as.Date(c("2013-04-28","2021-02-05"))) +
+  theme_minimal() +
+  labs(title = "Bitcoin Market Capitalization (Daily)", x = "Date", y = "Market Cap (USD)") +
+  scale_y_continuous(labels = label_number(suffix = "B", scale = 1e-9))
+```
+
+# Volatility Index (VIX)
+
+```{r include=FALSE}
+vix <- read_csv("data/VIX_History.csv")
+```
+
+The data is available from 1990 till present. It is measured daily.
+
+```{r}
+vix %>% 
+  ggplot(aes(Date, High)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "VIX (Daily)", x = "Date", y = "VIX")
+```
+
+# Uncertainty measures
+
+## Twitter Uncertainty
+```{r include=FALSE}
+tw_uncer <- readxl::read_excel("data/Twitter_Economic_Uncertainty.xlsx")
+```
+```{r}
+tw_uncer %>% 
+  ggplot(aes(as.Date(date), `TEU-ENG`)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "Twitter Uncertainty (Daily)", x = "Date", y = "TEU-ENG")
+```
+
+## Economic Policy Uncertainty
+
+```{r include=FALSE}
+epu_uncer <- readxl::read_excel("data/Global_Policy_Uncertainty.xlsx")
+library(zoo)
+epu_uncer$Date <- as.yearmon(paste(epu_uncer$Year, epu_uncer$Month), "%Y %m")
+
+```
+
+```{r}
+epu_uncer %>% 
+  ggplot(aes(as.Date(Date), GEPU_current)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "Economics Policy Uncertainty (Monthly)", x = "Date", y = "GEPU")
+```
+
+## Geopolitical Risk
+
+```{r include=FALSE}
+gpr <- readxl::read_excel("data/gpr_export.xls")
+gpr_tmp <- readxl::read_excel("data/gpr_export.xls", col_types = c("numeric"))
+gpr$GPR <- gpr_tmp$GPR
+remove(gpr_tmp)
+```
+
+```{r}
+gpr %>% 
+  drop_na(GPR) %>%
+  ggplot(aes(as.Date(month), GPR)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "Geopolitical Risk (Monthly)", x = "Date", y = "GPR")
+```
+
+# Gold
+## Price
+```{r include=FALSE}
+gold <- read_csv("data/gold/gold_prices.csv", col_types = cols(
+  Name = col_date("%m/%d/%y"),
+  `US dollar...2` = col_number()
+))
+
+gold_monthly <- read_csv("data/gold/gold price monthly/1990-2021.csv", col_types = cols(
+  Date = col_date("%d-%m-%Y"),
+  `United States(USD)` = col_number()
+))
+```
+
+```{r}
+gold %>%
+  ggplot(aes(as.Date(Name), `US dollar...2`)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "Gold Price (Daily)", x = "Date", y = "Price")
+```
+
+## Volatility
+
+```{r include=FALSE}
+gold_vix <- read_csv("data/gold/CBOE Gold ETF Volatility Index - GVZCLS.csv", col_types = cols(
+  GVZCLS = col_number()
+))
+```
+
+```{r}
+gold_vix %>%
+  ggplot(aes(DATE, GVZCLS)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "Gold Volatility Index (Daily)", x = "Date", y = "GVZCLS")
+```
+
+# Oil
+
+```{r include=FALSE}
+oil <- read_csv("data/crude-oil-prices.csv", col_types = cols(
+  Year = col_date("%Y")
+))
+```
+
+```{r}
+oil %>%
+  ggplot(aes(Year, `Oil - Crude prices since 1861 (current $)`)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "Oil - Crude prices since 1861 (Yearly)", x = "Date", y = "USD (Current)")
+```
+
+# US Money Supply
+
+```{r include=FALSE}
+US_m1 <- read_csv("data/money supply/M1NS.csv")
+US_m2 <- read_csv("data/money supply/M2NS.csv")
+US_m3 <- read_csv("data/money supply/M3NS.csv")
+```
+
+```{r}
+US_m1 %>%
+  ggplot(aes(DATE, M1NS)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "US Money Supply - M1 (Monthly, Not Seasonally Adjusted)", x = "Date", y = "USD (in Billions)")
+```
+```{r}
+US_m2 %>%
+  ggplot(aes(DATE, M2NS)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "US Money Supply - M2 (Monthly, Not Seasonally Adjusted)", x = "Date", y = "USD (in Billions)")
+```
+```{r}
+US_m3 %>%
+  ggplot(aes(DATE, M3NS)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "US Money Supply - M3 (Monthly, Not Seasonally Adjusted)", x = "Date", y = "USD (in Billions)")
+```
+# US Interest Rates
+
+```{r include=FALSE}
+US_rate <- read_csv("data/interest rates/INTDSRUSM193N.csv")
+```
+```{r}
+US_rate %>%
+  ggplot(aes(DATE, INTDSRUSM193N)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "Interest Rates, Discount Rate for United States \n(Annually, Not Seasonally Adjusted)", x = "Date", y = "Percentage")
+```
+# Google Search Trends Index
+
+```{r include=FALSE}
+gti <- read_csv("data/GTI_Bitcoin.csv", col_types = cols(
+  Month = col_date("%Y-%m"),
+  Bitcoin = col_number()
+))
+```
+
+```{r}
+gti %>%
+  ggplot(aes(Month, Bitcoin)) +
+  geom_line(color="#F2A900") +
+  theme_minimal() +
+  labs(title = "Google Search Trends Index - Bitcoin (Monthly, Worldwide, English)", x = "Date", y = "GTI")
+```
+
