@@ -151,3 +151,9 @@ plot <- ggplot(datasetMonthly, aes(x = date, y = VIX)) +
   geom_line(color="#77a8a7", size = 1) + theme_classic() + scale_y_continuous(labels=comma) 
 plot
 
+testModel <- lm(return ~ GEPU_log + log(GTI_Bitcoin) + log(volume) + log(`Gold_United States(USD)`) + log(high), data = datasetMonthly)
+
+durbinWatsonTest(model1)
+
+
+
